@@ -1,0 +1,32 @@
+.root {
+    -fx-background-color: #000000;
+}
+
+.main-menu {
+    -fx-background-color: transparent;
+}
+
+.menu-button {
+    -fx-background-color: rgba(139, 69, 19, 0.7);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 18px; /* Increased font size */
+    -fx-padding: 15px 20px; /* Increased padding */
+    -fx-border-color: #f5d742;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 5, 0, 0, 1);
+    -fx-alignment: center-left;
+    -fx-content-display: left;
+}
+
+.menu-button:hover {
+    -fx-background-color: rgba(160, 82, 45, 0.9);
+    -fx-cursor: hand;
+    -fx-font-size: 19px; /* Slightly larger on hover */
+}
+
+.menu-button:pressed {
+    -fx-background-color: rgba(139, 69, 19, 1.0);
+}
