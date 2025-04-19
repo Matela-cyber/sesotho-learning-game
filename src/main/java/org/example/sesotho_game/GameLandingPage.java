@@ -31,7 +31,14 @@ public class GameLandingPage extends Application {
         MainMenu mainMenu = new MainMenu(this);
         Scene scene = new Scene(mainMenu, 1370, 700);
         primaryStage.setScene(scene);
-        // Ensure window stays maximized after transition
+        primaryStage.setMaximized(true);
+        primaryStage.setIconified(false);
+    }
+
+    public void showGameScreen(GameSession session) {
+        GameScreen gameScreen = new GameScreen(session, this);
+        Scene scene = new Scene(gameScreen, 1370, 700);
+        primaryStage.setScene(scene);
         primaryStage.setMaximized(true);
         primaryStage.setIconified(false);
     }

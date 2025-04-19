@@ -25,11 +25,6 @@ public class MainMenu extends BorderPane {
         setupBackground();
         setupLeftMenu();
         setupContentArea();
-
-        Stage stage = mainApp.getPrimaryStage();
-        stage.setMaximized(true);
-        stage.setIconified(false);
-        stage.setResizable(false);
     }
 
     private void loadCareerNames() {
@@ -39,9 +34,9 @@ public class MainMenu extends BorderPane {
                 Files.createDirectories(dirPath);
             }
 
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath, "*.txt")) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath, "*.dat")) {
                 for (Path file : stream) {
-                    String name = file.getFileName().toString().replace(".txt", "");
+                    String name = file.getFileName().toString().replace(".dat", "");
                     careerNames.add(name);
                 }
             }
@@ -130,15 +125,14 @@ public class MainMenu extends BorderPane {
         quickPlayGrid.setAlignment(Pos.CENTER);
         quickPlayGrid.setHgap(15);
         quickPlayGrid.setVgap(15);
+        quickPlayGrid.setPadding(new Insets(20));
 
-        for (int i = 0; i < 9; i++) {
-            Button btn = new Button("Game " + (i+1));
-            btn.setMinSize(120, 80);
-            btn.setStyle("-fx-font-size: 14px; " +
-                    "-fx-background-color: rgba(70, 130, 180, 0.7); " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold;");
-            quickPlayGrid.add(btn, i%3, i/3);
+        String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
+
+        // Add category buttons
+        for (int i = 0; i < categories.length; i++) {
+            Button categoryBtn = createCategoryButton(categories[i]);
+            quickPlayGrid.add(categoryBtn, i % 3, i / 3);
         }
 
         StackPane gridPane = new StackPane();
@@ -146,6 +140,54 @@ public class MainMenu extends BorderPane {
                 "-fx-background-radius: 15;");
         gridPane.getChildren().add(quickPlayGrid);
         setCenter(gridPane);
+    }
+
+    private Button createCategoryButton(String category) {
+        Button btn = new Button(category);
+        btn.setMinSize(150, 100);
+        btn.setStyle("-fx-font-size: 16px; " +
+                "-fx-background-color: rgba(70, 130, 180, 0.7); " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: bold;");
+        btn.setOnAction(e -> showLevelSelection(category));
+        return btn;
+    }
+
+    private void showLevelSelection(String category) {
+        GridPane levelGrid = new GridPane();
+        levelGrid.setAlignment(Pos.CENTER);
+        levelGrid.setHgap(15);
+        levelGrid.setVgap(15);
+
+        String[] levels = {"Easy", "Medium", "Hard"};
+        for (int i = 0; i < levels.length; i++) {
+            Button levelBtn = new Button(levels[i]);
+            levelBtn.setMinSize(120, 80);
+            levelBtn.setStyle("-fx-font-size: 14px; " +
+                    "-fx-background-color: rgba(46, 125, 50, 0.7); " +
+                    "-fx-text-fill: white; " +
+                    "-fx-font-weight: bold;");
+            String level = levels[i].toLowerCase();
+            levelBtn.setOnAction(e -> startGameSession(category, level));
+            levelGrid.add(levelBtn, i, 0);
+        }
+
+        StackPane gridPane = new StackPane();
+        gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
+                "-fx-background-radius: 15;");
+        gridPane.getChildren().add(levelGrid);
+        setCenter(gridPane);
+    }
+
+    private void startGameSession(String category, String level) {
+        List<Question> questions = QuestionLoader.loadQuestions(category, level);
+        if (questions.isEmpty()) {
+            showAlert("Error", "No questions available for " + category + " - " + level);
+            return;
+        }
+
+        GameSession session = new GameSession("QuickPlay", category, level, questions);
+        mainApp.showGameScreen(session);
     }
 
     private void setupCareerGrid() {
@@ -208,6 +250,30 @@ public class MainMenu extends BorderPane {
         setCenter(gridPane);
     }
 
+    private void startCareer(String name) {
+        CareerData career = CareerData.load(name);
+        if (career == null) {
+            showAlert("Career Error", "Could not load career data for " + name);
+            return;
+        }
+
+        List<Question> questions = QuestionLoader.loadQuestions(
+                career.getCurrentCategory(),
+                career.getCurrentLevel()
+        );
+
+        if (questions.isEmpty()) {
+            showAlert("Error", "No questions available for " +
+                    career.getCurrentCategory() + " - " + career.getCurrentLevel());
+            return;
+        }
+
+        GameSession session = new GameSession(name, career.getCurrentCategory(),
+                career.getCurrentLevel(), questions);
+        session.setScore(career.getScore());
+        mainApp.showGameScreen(session);
+    }
+
     private void setupSettingsGrid() {
         GridPane settingsGrid = new GridPane();
         settingsGrid.setAlignment(Pos.CENTER);
@@ -224,6 +290,8 @@ public class MainMenu extends BorderPane {
                     "-fx-background-color: rgba(70, 130, 180, 0.7); " +
                     "-fx-text-fill: white; " +
                     "-fx-font-weight: bold;");
+            final String setting = settings[i];
+            btn.setOnAction(e -> handleSetting(setting));
             settingsGrid.add(btn, i%3, i/3);
         }
 
@@ -232,6 +300,66 @@ public class MainMenu extends BorderPane {
                 "-fx-background-radius: 15;");
         gridPane.getChildren().add(settingsGrid);
         setCenter(gridPane);
+    }
+
+    private void handleSetting(String setting) {
+        switch (setting.toLowerCase()) {
+            case "sound":
+                showAlert("Settings", "Sound options would go here");
+                break;
+            case "language":
+                showAlert("Settings", "Language selection would go here");
+                break;
+            case "difficulty":
+                showAlert("Settings", "Difficulty adjustment would go here");
+                break;
+            case "profile":
+                showAlert("Settings", "Profile management would go here");
+                break;
+            case "help":
+                showAlert("Help", "Game instructions and help would go here");
+                break;
+            case "about":
+                showAlert("About", "Sesotho Learning Game\nVersion 1.0");
+                break;
+            case "reset":
+                handleReset();
+                break;
+            case "save":
+                showAlert("Save", "Game progress saved");
+                break;
+            case "exit":
+                confirmQuit();
+                break;
+        }
+    }
+
+    private void handleReset() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reset Game");
+        alert.setHeaderText("Reset all game data?");
+        alert.setContentText("This will delete all careers and progress. Are you sure?");
+
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            try {
+                Path dirPath = Paths.get("src/main/resources/org/example/sesotho_game/files");
+                if (Files.exists(dirPath)) {
+                    Files.walk(dirPath)
+                            .filter(Files::isRegularFile)
+                            .forEach(file -> {
+                                try {
+                                    Files.delete(file);
+                                } catch (IOException e) {
+                                    System.err.println("Error deleting file: " + file);
+                                }
+                            });
+                    careerNames.clear();
+                    setupCareerGrid();
+                }
+            } catch (IOException e) {
+                showAlert("Error", "Could not reset game data: " + e.getMessage());
+            }
+        }
     }
 
     private void showCareerMenu(Button menuBtn, String careerName) {
@@ -243,8 +371,26 @@ public class MainMenu extends BorderPane {
         MenuItem renameItem = new MenuItem("Rename");
         renameItem.setOnAction(e -> renameCareer(careerName));
 
-        contextMenu.getItems().addAll(deleteItem, renameItem);
+        MenuItem statsItem = new MenuItem("View Stats");
+        statsItem.setOnAction(e -> showCareerStats(careerName));
+
+        contextMenu.getItems().addAll(deleteItem, renameItem, statsItem);
         contextMenu.show(menuBtn, Side.BOTTOM, 0, 0);
+    }
+
+    private void showCareerStats(String careerName) {
+        CareerData career = CareerData.load(careerName);
+        if (career != null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Career Statistics");
+            alert.setHeaderText("Stats for " + careerName);
+            alert.setContentText(
+                    "Score: " + career.getScore() + "\n" +
+                            "Current Level: " + career.getCurrentLevel() + "\n" +
+                            "Current Category: " + career.getCurrentCategory()
+            );
+            alert.showAndWait();
+        }
     }
 
     private void deleteCareer(String name) {
@@ -255,12 +401,12 @@ public class MainMenu extends BorderPane {
 
         if (alert.showAndWait().get() == ButtonType.OK) {
             try {
-                Path filePath = Paths.get("src/main/resources/org/example/sesotho_game/files", name + ".txt");
+                Path filePath = Paths.get("src/main/resources/org/example/sesotho_game/files", name + ".dat");
                 Files.deleteIfExists(filePath);
                 careerNames.remove(name);
                 setupCareerGrid();
             } catch (IOException e) {
-                System.err.println("Error deleting career: " + e.getMessage());
+                showAlert("Error", "Could not delete career: " + e.getMessage());
             }
         }
     }
@@ -275,8 +421,8 @@ public class MainMenu extends BorderPane {
         result.ifPresent(newName -> {
             if (!newName.trim().isEmpty() && !newName.equals(oldName)) {
                 try {
-                    Path oldPath = Paths.get("src/main/resources/org/example/sesotho_game/files", oldName + ".txt");
-                    Path newPath = Paths.get("src/main/resources/org/example/sesotho_game/files", newName + ".txt");
+                    Path oldPath = Paths.get("src/main/resources/org/example/sesotho_game/files", oldName + ".dat");
+                    Path newPath = Paths.get("src/main/resources/org/example/sesotho_game/files", newName + ".dat");
                     Files.move(oldPath, newPath);
 
                     int index = careerNames.indexOf(oldName);
@@ -285,7 +431,7 @@ public class MainMenu extends BorderPane {
                         setupCareerGrid();
                     }
                 } catch (IOException e) {
-                    System.err.println("Error renaming career: " + e.getMessage());
+                    showAlert("Error", "Could not rename career: " + e.getMessage());
                 }
             }
         });
@@ -300,25 +446,15 @@ public class MainMenu extends BorderPane {
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {
             if (!name.trim().isEmpty()) {
-                createCareerFile(name);
-                careerNames.add(0, name); // Add to beginning of list
-                setupCareerGrid(); // Refresh the grid
+                CareerData career = new CareerData(name);
+                if (career.save()) {
+                    careerNames.add(0, name);
+                    setupCareerGrid();
+                } else {
+                    showAlert("Error", "Could not create career file");
+                }
             }
         });
-    }
-
-    private void createCareerFile(String name) {
-        try {
-            Path filePath = Paths.get("src/main/resources/org/example/sesotho_game/files", name + ".txt");
-            Files.write(filePath, Collections.emptyList(), StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            System.err.println("Error creating career file: " + e.getMessage());
-        }
-    }
-
-    private void startCareer(String name) {
-        // Implementation for starting a career
-        System.out.println("Starting career: " + name);
     }
 
     private void confirmQuit() {
@@ -363,6 +499,7 @@ public class MainMenu extends BorderPane {
         }
         return base;
     }
+
     private Button createMenuButton(String text, String type) {
         Button button = new Button(text);
         button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
@@ -384,5 +521,13 @@ public class MainMenu extends BorderPane {
         });
 
         return button;
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
