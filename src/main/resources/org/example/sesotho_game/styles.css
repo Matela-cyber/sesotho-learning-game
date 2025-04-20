@@ -30,3 +30,8 @@
 .menu-button:pressed {
     -fx-background-color: rgba(139, 69, 19, 1.0);
 }
+// For the accordion in showCareerLevels method:
+statsPane.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+statsContent.setStyle("-fx-padding: 10px; -fx-font-size: 13px;");
+playBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+backBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");

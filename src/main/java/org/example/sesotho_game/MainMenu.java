@@ -129,9 +129,10 @@ public class MainMenu extends BorderPane {
 
         String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
 
-        // Add category buttons
         for (int i = 0; i < categories.length; i++) {
-            Button categoryBtn = createCategoryButton(categories[i]);
+            final String category = categories[i]; // Create final copy
+            Button categoryBtn = createCategoryButton(category);
+            categoryBtn.setOnAction(e -> showLevelSelection(category, "QuickPlay"));
             quickPlayGrid.add(categoryBtn, i % 3, i / 3);
         }
 
@@ -149,11 +150,10 @@ public class MainMenu extends BorderPane {
                 "-fx-background-color: rgba(70, 130, 180, 0.7); " +
                 "-fx-text-fill: white; " +
                 "-fx-font-weight: bold;");
-        btn.setOnAction(e -> showLevelSelection(category));
         return btn;
     }
 
-    private void showLevelSelection(String category) {
+    private void showLevelSelection(String category, String mode) {
         GridPane levelGrid = new GridPane();
         levelGrid.setAlignment(Pos.CENTER);
         levelGrid.setHgap(15);
@@ -168,26 +168,29 @@ public class MainMenu extends BorderPane {
                     "-fx-text-fill: white; " +
                     "-fx-font-weight: bold;");
             String level = levels[i].toLowerCase();
-            levelBtn.setOnAction(e -> startGameSession(category, level));
+
+            if (mode.equals("QuickPlay")) {
+                levelBtn.setOnAction(e -> startGameSession("QuickPlay", category, level));
+            }
+
             levelGrid.add(levelBtn, i, 0);
         }
+
+        Button backBtn = new Button("Back");
+        backBtn.setOnAction(e -> {
+            if (mode.equals("QuickPlay")) {
+                setupQuickPlayGrid();
+            } else {
+                setupCareerGrid();
+            }
+        });
+        levelGrid.add(backBtn, 1, 1);
 
         StackPane gridPane = new StackPane();
         gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
                 "-fx-background-radius: 15;");
         gridPane.getChildren().add(levelGrid);
         setCenter(gridPane);
-    }
-
-    private void startGameSession(String category, String level) {
-        List<Question> questions = QuestionLoader.loadQuestions(category, level);
-        if (questions.isEmpty()) {
-            showAlert("Error", "No questions available for " + category + " - " + level);
-            return;
-        }
-
-        GameSession session = new GameSession("QuickPlay", category, level, questions);
-        mainApp.showGameScreen(session);
     }
 
     private void setupCareerGrid() {
@@ -256,23 +259,109 @@ public class MainMenu extends BorderPane {
             showAlert("Career Error", "Could not load career data for " + name);
             return;
         }
+        showCareerCategories(career);
+    }
 
-        List<Question> questions = QuestionLoader.loadQuestions(
-                career.getCurrentCategory(),
-                career.getCurrentLevel()
-        );
+    private void showCareerCategories(CareerData career) {
+        GridPane categoryGrid = new GridPane();
+        categoryGrid.setAlignment(Pos.CENTER);
+        categoryGrid.setHgap(15);
+        categoryGrid.setVgap(15);
+        categoryGrid.setPadding(new Insets(20));
 
+        String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
+
+        for (int i = 0; i < categories.length; i++) {
+            final String category = categories[i]; // Create final copy
+            Button categoryBtn = createCategoryButton(category);
+            categoryBtn.setOnAction(e -> showCareerLevels(career, category));
+            categoryGrid.add(categoryBtn, i % 3, i / 3);
+        }
+
+        Button backBtn = new Button("Back to Careers");
+        backBtn.setOnAction(e -> setupCareerGrid());
+        categoryGrid.add(backBtn, 1, 2);
+
+        StackPane gridPane = new StackPane();
+        gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
+                "-fx-background-radius: 15;");
+        gridPane.getChildren().add(categoryGrid);
+        setCenter(gridPane);
+    }
+
+    private void showCareerLevels(CareerData career, String category) {
+        VBox levelsBox = new VBox(10);
+        levelsBox.setAlignment(Pos.CENTER);
+        levelsBox.setPadding(new Insets(20));
+
+        String[] levels = {"Easy", "Medium", "Hard"};
+        String[] levelKeys = {"easy", "medium", "hard"};
+
+        for (int i = 0; i < levels.length; i++) {
+            String level = levels[i];
+            String levelKey = levelKeys[i];
+
+            CareerData.CategoryStats stats = career.getCategoryStats().get(category).get(levelKey);
+
+            Accordion levelAccordion = new Accordion();
+            TitledPane statsPane = new TitledPane();
+            statsPane.setText(level + " - Played: " + stats.gamesPlayed);
+            statsPane.setExpanded(false);
+
+            // Stats content
+            VBox statsContent = new VBox(10);
+            statsContent.setStyle("-fx-padding: 10px;");
+            statsContent.getChildren().addAll(
+                    new Label("Games Played: " + stats.gamesPlayed),
+                    new Label("Best Single Game: " + stats.highScore),
+                    new Label(String.format("Average: %.1f", stats.getAverageScore())),
+                    new Label("Total Points: " + stats.totalPoints)
+            );
+
+            // Play button
+            Button playBtn = new Button("Play " + level);
+            playBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+            playBtn.setOnAction(e -> startCareerGameSession(career, category, levelKey));
+            statsContent.getChildren().add(playBtn);
+
+            statsPane.setContent(statsContent);
+            statsPane.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+            levelAccordion.getPanes().add(statsPane);
+            levelsBox.getChildren().add(levelAccordion);
+        }
+
+        // Back button
+        Button backBtn = new Button("Back to Categories");
+        backBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
+        backBtn.setOnAction(e -> showCareerCategories(career));
+        levelsBox.getChildren().add(backBtn);
+
+        setCenter(levelsBox);
+    }
+    private void startCareerGameSession(CareerData career, String category, String level) {
+        List<Question> questions = QuestionLoader.loadQuestions(category, level);
         if (questions.isEmpty()) {
-            showAlert("Error", "No questions available for " +
-                    career.getCurrentCategory() + " - " + career.getCurrentLevel());
+            showAlert("Error", "No questions available for " + category + " - " + level);
             return;
         }
 
-        GameSession session = new GameSession(name, career.getCurrentCategory(),
-                career.getCurrentLevel(), questions);
-        session.setScore(career.getScore());
+        // Create new session with score=0
+        GameSession session = new GameSession(career.getPlayerName(), category, level, questions);
+
+        // Don't set any initial score here - let it start fresh
         mainApp.showGameScreen(session);
     }
+    private void startGameSession(String playerName, String category, String level) {
+        List<Question> questions = QuestionLoader.loadQuestions(category, level);
+        if (questions.isEmpty()) {
+            showAlert("Error", "No questions available for " + category + " - " + level);
+            return;
+        }
+
+        GameSession session = new GameSession(playerName, category, level, questions);
+        mainApp.showGameScreen(session);
+    }
+
 
     private void setupSettingsGrid() {
         GridPane settingsGrid = new GridPane();
@@ -381,14 +470,36 @@ public class MainMenu extends BorderPane {
     private void showCareerStats(String careerName) {
         CareerData career = CareerData.load(careerName);
         if (career != null) {
+            StringBuilder statsText = new StringBuilder();
+            statsText.append("Career: ").append(careerName).append("\n");
+            statsText.append("Total Score: ").append(career.getTotalScore()).append("\n\n");
+
+            statsText.append("Category Breakdown:\n");
+            for (Map.Entry<String, Map<String, CareerData.CategoryStats>> categoryEntry :
+                    career.getCategoryStats().entrySet()) {
+                String category = categoryEntry.getKey();
+                statsText.append("\n").append(category).append(":\n");
+
+                for (Map.Entry<String, CareerData.CategoryStats> levelEntry :
+                        categoryEntry.getValue().entrySet()) {
+                    String level = levelEntry.getKey();
+                    CareerData.CategoryStats stats = levelEntry.getValue();
+
+                    if (stats.gamesPlayed > 0) {
+                        statsText.append("  ").append(level).append(":\n");
+                        statsText.append("    Games Played: ").append(stats.gamesPlayed).append("\n");
+                        statsText.append("    Best Score: ").append(stats.highScore).append("\n");
+                        statsText.append(String.format("    Average Score: %.1f\n", stats.getAverageScore()));
+                        statsText.append("    Total Points: ").append(stats.totalPoints).append("\n");
+                    }
+                }
+            }
+
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Career Statistics");
-            alert.setHeaderText("Stats for " + careerName);
-            alert.setContentText(
-                    "Score: " + career.getScore() + "\n" +
-                            "Current Level: " + career.getCurrentLevel() + "\n" +
-                            "Current Category: " + career.getCurrentCategory()
-            );
+            alert.setHeaderText("Detailed Stats for " + careerName);
+            alert.setContentText(statsText.toString());
+            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
             alert.showAndWait();
         }
     }

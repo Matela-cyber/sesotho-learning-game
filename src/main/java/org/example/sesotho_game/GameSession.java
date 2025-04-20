@@ -20,7 +20,7 @@ public class GameSession {
         this.level = level;
         this.questions = selectRandomQuestions(questionPool, 5);
         this.currentQuestionIndex = 0;
-        this.score = 0;
+        this.score = 0; // Always starts at zero for new sessions
         this.levelPassed = false;
         this.lastPoints = 0;
     }
@@ -110,5 +110,10 @@ public class GameSession {
 
     public String getLevel() {
         return level;
+    }
+
+    // New method to get the final score for career updates
+    public int getFinalScore() {
+        return score; // Returns the score at game end
     }
 }

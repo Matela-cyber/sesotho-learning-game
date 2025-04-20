@@ -151,13 +151,15 @@ public class GameScreen extends BorderPane {
             result.setHeaderText("Level Passed!");
             result.setContentText("Congratulations! Your score: " + session.getScore());
 
-            // Update career progress if this is a career game
             if (!session.getPlayerName().equals("QuickPlay")) {
                 CareerData career = CareerData.load(session.getPlayerName());
                 if (career != null) {
-                    career.setScore(session.getScore());
-                    career.setCurrentCategory(session.getCategory());
-                    career.setCurrentLevel(session.getLevel());
+                    // Only update with THIS game's score (session.getScore())
+                    career.updateStats(
+                            session.getCategory(),
+                            session.getLevel(),
+                            session.getScore() // This is just the current game's score
+                    );
                     career.save();
                 }
             }
