@@ -21,7 +21,7 @@ public class CareerData implements Serializable {
     }
 
     private void initializeStats() {
-        String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
+        String[] categories = {"Lilotho", "Lipapali", "Maele", "Lijo", "Puo"}; // Updated categories
         String[] levels = {"easy", "medium", "hard"};
 
         for (String category : categories) {

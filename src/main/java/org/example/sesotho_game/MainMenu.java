@@ -4,6 +4,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.geometry.*;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
 import java.io.*;
@@ -120,6 +121,7 @@ public class MainMenu extends BorderPane {
         }
     }
 
+
     private void setupQuickPlayGrid() {
         GridPane quickPlayGrid = new GridPane();
         quickPlayGrid.setAlignment(Pos.CENTER);
@@ -127,10 +129,10 @@ public class MainMenu extends BorderPane {
         quickPlayGrid.setVgap(15);
         quickPlayGrid.setPadding(new Insets(20));
 
-        String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
+        String[] categories = {"Lilotho", "Lipapali", "Maele", "Lijo", "Puo"};
 
         for (int i = 0; i < categories.length; i++) {
-            final String category = categories[i]; // Create final copy
+            final String category = categories[i];
             Button categoryBtn = createCategoryButton(category);
             categoryBtn.setOnAction(e -> showLevelSelection(category, "QuickPlay"));
             quickPlayGrid.add(categoryBtn, i % 3, i / 3);
@@ -213,7 +215,6 @@ public class MainMenu extends BorderPane {
             StackPane careerPane = new StackPane();
             careerPane.setAlignment(Pos.TOP_RIGHT);
 
-            // Main career button
             Button careerBtn = new Button(name);
             careerBtn.setMinSize(120, 80);
             careerBtn.setStyle("-fx-font-size: 14px; " +
@@ -222,7 +223,6 @@ public class MainMenu extends BorderPane {
                     "-fx-font-weight: bold;");
             careerBtn.setOnAction(e -> startCareer(name));
 
-            // 3-dots menu button (positioned top-right)
             Button menuBtn = new Button("⋮");
             menuBtn.setStyle("-fx-font-size: 14px; " +
                     "-fx-background-color: rgba(160, 82, 45, 0.9); " +
@@ -232,7 +232,6 @@ public class MainMenu extends BorderPane {
                     "-fx-min-height: 25;");
             menuBtn.setOnAction(e -> showCareerMenu(menuBtn, name));
 
-            // Position menu button in top-right corner
             StackPane.setAlignment(menuBtn, Pos.TOP_RIGHT);
             StackPane.setMargin(menuBtn, new Insets(5, 5, 0, 0));
 
@@ -253,6 +252,163 @@ public class MainMenu extends BorderPane {
         setCenter(gridPane);
     }
 
+    private void setupSettingsGrid() {
+        VBox settingsBox = new VBox(20);
+        settingsBox.setAlignment(Pos.CENTER);
+        settingsBox.setPadding(new Insets(20));
+
+        // Settings Title
+        Label settingsTitle = new Label("GAME SETTINGS");
+        settingsTitle.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
+
+        // ===== TIME SETTINGS =====
+        Label timeLabel = new Label("Question Time (seconds):");
+        timeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
+
+        int currentTime = loadTimeSetting();
+        Slider timeSlider = new Slider(10, 60, currentTime);
+        timeSlider.setMajorTickUnit(10);
+        timeSlider.setMinorTickCount(5);
+        timeSlider.setShowTickLabels(true);
+        timeSlider.setShowTickMarks(true);
+        timeSlider.setSnapToTicks(true);
+        timeSlider.setPrefWidth(300);
+
+        Label timeValue = new Label(String.valueOf(currentTime));
+        timeValue.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+
+        timeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            timeValue.setText(String.valueOf(newVal.intValue()));
+        });
+
+        Button saveTimeBtn = new Button("Save Time");
+        saveTimeBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+        saveTimeBtn.setOnAction(e -> {
+            saveTimeSetting((int)timeSlider.getValue());
+            showAlert("Success", "Time per question set to " + (int)timeSlider.getValue() + " seconds");
+        });
+
+        HBox timeSetting = new HBox(10, timeLabel, timeSlider, timeValue, saveTimeBtn);
+        timeSetting.setAlignment(Pos.CENTER);
+
+        // ===== MUSIC SETTINGS =====
+        Label musicLabel = new Label("Background Music:");
+        musicLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
+
+        List<String> songs = AudioManager.getSongNames();
+        ComboBox<String> songSelector = new ComboBox<>();
+        songSelector.getItems().addAll(songs);
+        songSelector.setValue(songs.get(AudioManager.getCurrentSongIndex()));
+
+        // Volume Control
+        Label volumeLabel = new Label("Volume:");
+        volumeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+
+        Slider volumeSlider = new Slider(0, 100, 50);
+        volumeSlider.setPrefWidth(150);
+        volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            AudioManager.setVolume(newVal.doubleValue() / 100);
+        });
+
+        Button playPauseBtn = new Button("Pause");
+        playPauseBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+        playPauseBtn.setOnAction(e -> {
+            AudioManager.togglePlayPause();
+            playPauseBtn.setText(
+                    AudioManager.mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING
+                            ? "Pause" : "Play");
+        });
+
+        songSelector.setOnAction(e -> {
+            int selectedIndex = songSelector.getSelectionModel().getSelectedIndex();
+            AudioManager.playSong(selectedIndex);
+        });
+
+        GridPane musicGrid = new GridPane();
+        musicGrid.setHgap(10);
+        musicGrid.setVgap(10);
+        musicGrid.setAlignment(Pos.CENTER);
+
+        musicGrid.add(new Label("Current Song:"), 0, 0);
+        musicGrid.add(songSelector, 1, 0);
+        musicGrid.add(playPauseBtn, 2, 0);
+        musicGrid.add(volumeLabel, 0, 1);
+        musicGrid.add(volumeSlider, 1, 1, 2, 1);
+
+        // ===== HELP SECTION =====
+        Button helpBtn = new Button("Help");
+        helpBtn.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white;");
+        helpBtn.setOnAction(e -> showHelp());
+
+        // ===== BACK BUTTON =====
+        Button backBtn = new Button("Back to Menu");
+        backBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
+        backBtn.setOnAction(e -> showContent("quickplay"));
+
+        // Add all components to settings box
+        settingsBox.getChildren().addAll(
+                settingsTitle,
+                new Separator(),
+                timeSetting,
+                new Separator(),
+                musicLabel,
+                musicGrid,
+                new Separator(),
+                helpBtn,
+                backBtn
+        );
+
+        StackPane settingsPane = new StackPane();
+        settingsPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); -fx-background-radius: 15;");
+        settingsPane.getChildren().add(settingsBox);
+        setCenter(settingsPane);
+    }
+    private int loadTimeSetting() {
+        try {
+            Path timeFile = Paths.get("time.dat");
+            if (Files.exists(timeFile)) {
+                String content = Files.readString(timeFile).trim();
+                return Integer.parseInt(content);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading time setting: " + e.getMessage());
+        }
+        return 30; // default value
+    }
+
+    private void saveTimeSetting(int seconds) {
+        try {
+            Files.writeString(Paths.get("time.dat"), String.valueOf(seconds));
+        } catch (IOException e) {
+            System.err.println("Could not save time setting: " + e.getMessage());
+        }
+    }
+
+    private void showHelp() {
+        TextArea helpText = new TextArea();
+        helpText.setEditable(false);
+        helpText.setWrapText(true);
+        helpText.setText("SESOTHO LEARNING GAME HELP\n\n" +
+                "1. Select a game mode (Quick Play or Career)\n" +
+                "2. Choose a category and difficulty level\n" +
+                "3. Answer questions before time runs out\n" +
+                "4. Earn points for correct answers\n\n" +
+                "SETTINGS:\n" +
+                "- Adjust question time limit (10-60 seconds)\n" +
+                "- Toggle sound on/off");
+
+        helpText.setStyle("-fx-font-size: 14px; -fx-text-fill: white; " +
+                "-fx-control-inner-background: #333;");
+
+        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
+        helpAlert.setTitle("Help");
+        helpAlert.setHeaderText("Game Instructions");
+        helpAlert.getDialogPane().setContent(helpText);
+        helpAlert.getDialogPane().setPrefSize(500, 400);
+        helpAlert.showAndWait();
+    }
+
+
     private void startCareer(String name) {
         CareerData career = CareerData.load(name);
         if (career == null) {
@@ -269,7 +425,7 @@ public class MainMenu extends BorderPane {
         categoryGrid.setVgap(15);
         categoryGrid.setPadding(new Insets(20));
 
-        String[] categories = {"Lilotho", "Lipapali", "Maele", "Culture", "History"};
+        String[] categories = {"Lilotho", "Lipapali", "Maele", "Lijo", "Puo"}; // Updated categories
 
         for (int i = 0; i < categories.length; i++) {
             final String category = categories[i]; // Create final copy
@@ -363,33 +519,33 @@ public class MainMenu extends BorderPane {
     }
 
 
-    private void setupSettingsGrid() {
-        GridPane settingsGrid = new GridPane();
-        settingsGrid.setAlignment(Pos.CENTER);
-        settingsGrid.setHgap(15);
-        settingsGrid.setVgap(15);
-
-        String[] settings = {"Sound", "Language", "Difficulty",
-                "Profile", "Help", "About",
-                "Reset", "Save", "Exit"};
-        for (int i = 0; i < settings.length; i++) {
-            Button btn = new Button(settings[i]);
-            btn.setMinSize(120, 80);
-            btn.setStyle("-fx-font-size: 14px; " +
-                    "-fx-background-color: rgba(70, 130, 180, 0.7); " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold;");
-            final String setting = settings[i];
-            btn.setOnAction(e -> handleSetting(setting));
-            settingsGrid.add(btn, i%3, i/3);
-        }
-
-        StackPane gridPane = new StackPane();
-        gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
-                "-fx-background-radius: 15;");
-        gridPane.getChildren().add(settingsGrid);
-        setCenter(gridPane);
-    }
+//    private void setupSettingsGrid() {
+//        GridPane settingsGrid = new GridPane();
+//        settingsGrid.setAlignment(Pos.CENTER);
+//        settingsGrid.setHgap(15);
+//        settingsGrid.setVgap(15);
+//
+//        String[] settings = {"Sound", "Language", "Difficulty",
+//                "Profile", "Help", "About",
+//                "Reset", "Save", "Exit"};
+//        for (int i = 0; i < settings.length; i++) {
+//            Button btn = new Button(settings[i]);
+//            btn.setMinSize(120, 80);
+//            btn.setStyle("-fx-font-size: 14px; " +
+//                    "-fx-background-color: rgba(70, 130, 180, 0.7); " +
+//                    "-fx-text-fill: white; " +
+//                    "-fx-font-weight: bold;");
+//            final String setting = settings[i];
+//            btn.setOnAction(e -> handleSetting(setting));
+//            settingsGrid.add(btn, i%3, i/3);
+//        }
+//
+//        StackPane gridPane = new StackPane();
+//        gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
+//                "-fx-background-radius: 15;");
+//        gridPane.getChildren().add(settingsGrid);
+//        setCenter(gridPane);
+//    }
 
     private void handleSetting(String setting) {
         switch (setting.toLowerCase()) {

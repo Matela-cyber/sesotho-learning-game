@@ -28,6 +28,7 @@ public class GameLandingPage extends Application {
     }
 
     public void showMainMenu() {
+        AudioManager.initialize();
         MainMenu mainMenu = new MainMenu(this);
         Scene scene = new Scene(mainMenu, 1370, 700);
         primaryStage.setScene(scene);
