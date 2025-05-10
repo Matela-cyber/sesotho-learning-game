@@ -1,17 +1,23 @@
 package org.example.sesotho_game;
 
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.image.ImageView;
-import javafx.scene.image.Image;
-import javafx.geometry.*;
-import javafx.scene.text.*;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
+import javafx.geometry.*;
+import javafx.scene.text.*;
 import javafx.util.Duration;
-import java.io.*;
-import java.nio.file.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 
 public class GameScreen extends BorderPane {
     private GameSession session;
@@ -63,16 +69,13 @@ public class GameScreen extends BorderPane {
     }
 
     private void setupBackground() {
-        // Create the background image view
         categoryBackground = new ImageView();
         setCategoryBackground(session.getCategory());
 
-        // Make background fill the entire space
         categoryBackground.setPreserveRatio(false);
         categoryBackground.fitWidthProperty().bind(mainApp.getPrimaryStage().widthProperty());
         categoryBackground.fitHeightProperty().bind(mainApp.getPrimaryStage().heightProperty());
 
-        // Create a stack pane to hold background and content
         backgroundPane = new StackPane();
         backgroundPane.getChildren().add(categoryBackground);
         this.setCenter(backgroundPane);
@@ -80,13 +83,11 @@ public class GameScreen extends BorderPane {
 
     private void setCategoryBackground(String category) {
         String imagePath = getBackgroundPath(category);
-
         try {
             Image bgImage = new Image(getClass().getResourceAsStream(imagePath));
             categoryBackground.setImage(bgImage);
         } catch (Exception e) {
             System.err.println("Error loading background image: " + e.getMessage());
-            // Fallback to default if error occurs
             try {
                 Image defaultBg = new Image(getClass().getResourceAsStream(
                         "/org/example/sesotho_game/images/bg_default.png"));
@@ -120,51 +121,41 @@ public class GameScreen extends BorderPane {
     }
 
     private void setupUI() {
-        // Create content container with semi-transparent background
         contentBox = new VBox(15);
         contentBox.setAlignment(Pos.CENTER);
         contentBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-background-radius: 15;");
         contentBox.setPadding(new Insets(20));
         contentBox.setMaxWidth(800);
 
-        // Category title
         categoryTitleLabel = new Label(getCategoryTitle(session.getCategory()));
         categoryTitleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
 
-        // Top info bar (score, progress, difficulty and timer)
-        HBox topInfoBar = new HBox(20);
+        GridPane infoGrid = new GridPane();
+        infoGrid.setHgap(20);
+        infoGrid.setVgap(5);
+        infoGrid.setAlignment(Pos.CENTER);
+
         scoreLabel = new Label("Score: " + session.getScore());
         progressLabel = new Label("Question: " + (session.getCurrentQuestionIndex()+1) + "/" + session.getTotalQuestions());
         difficultyLabel = new Label("Level: " + session.getLevel().toUpperCase());
         timerLabel = new Label("Time: " + timeRemaining);
 
-        // Style all info labels
         String infoStyle = "-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;";
         scoreLabel.setStyle(infoStyle);
         progressLabel.setStyle(infoStyle);
         difficultyLabel.setStyle(infoStyle);
         timerLabel.setStyle("-fx-text-fill: #FFD700; -fx-font-size: 14px; -fx-font-weight: bold;");
 
-        // Create a grid for better organization of info
-        GridPane infoGrid = new GridPane();
-        infoGrid.setHgap(20);
-        infoGrid.setVgap(5);
-        infoGrid.setAlignment(Pos.CENTER);
-
-        // First row
         infoGrid.add(scoreLabel, 0, 0);
         infoGrid.add(progressLabel, 1, 0);
-        // Second row
         infoGrid.add(difficultyLabel, 0, 1);
         infoGrid.add(timerLabel, 1, 1);
 
-        // Question display
         questionLabel = new Label();
         questionLabel.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
         questionLabel.setWrapText(true);
         questionLabel.setMaxWidth(750);
 
-        // Answer options
         VBox optionsBox = new VBox(10);
         optionsGroup = new ToggleGroup();
 
@@ -177,33 +168,49 @@ public class GameScreen extends BorderPane {
             optionsBox.getChildren().add(option);
         }
 
-        // Submit button
         Button submitBtn = new Button("Submit");
         submitBtn.setStyle("-fx-font-size: 16px; -fx-padding: 8px 20px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
         submitBtn.setOnAction(e -> checkAnswer());
 
-        // Add all components to content box
+        HBox controlButtons = new HBox(10);
+        controlButtons.setAlignment(Pos.CENTER);
+
+        Button quitButton = new Button("Quit");
+        quitButton.setStyle("-fx-font-size: 16px; -fx-padding: 8px 20px; -fx-background-color: #f44336; -fx-text-fill: white;");
+        quitButton.setOnAction(e -> confirmQuit());
+
+        controlButtons.getChildren().add(quitButton);
+
         contentBox.getChildren().addAll(
                 categoryTitleLabel,
-                infoGrid,  // Using the grid instead of the old HBox
+                infoGrid,
                 questionLabel,
                 optionsBox,
-                submitBtn
+                submitBtn,
+                controlButtons
         );
 
         backgroundPane.getChildren().add(contentBox);
     }
 
     private void startTimer() {
-        timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            timeRemaining--;
-            timerLabel.setText("Time: " + timeRemaining);
+        KeyFrame keyFrame = new KeyFrame(
+                Duration.seconds(1),
+                new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent event) {
+                        timeRemaining--;
+                        timerLabel.setText("Time: " + timeRemaining);
 
-            if (timeRemaining <= 0) {
-                timeline.stop();
-                timeUp();
-            }
-        }));  // Added missing parenthesis here
+                        if (timeRemaining <= 0) {
+                            timeline.stop();
+                            timeUp();
+                        }
+                    }
+                }
+        );
+
+        timeline = new Timeline(keyFrame);
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
     }
@@ -215,7 +222,6 @@ public class GameScreen extends BorderPane {
         alert.setContentText("You ran out of time! Moving to next question.");
         alert.showAndWait();
 
-        // Automatically submit empty answer
         session.answerCurrentQuestion(-1);
 
         if (session.hasMoreQuestions()) {
@@ -238,7 +244,6 @@ public class GameScreen extends BorderPane {
 
         questionLabel.setText(current.getQuestionText());
 
-        // Set options
         int optionIndex = 0;
         for (javafx.scene.Node node : ((VBox)contentBox.getChildren().get(3)).getChildren()) {
             if (node instanceof RadioButton) {
@@ -250,8 +255,7 @@ public class GameScreen extends BorderPane {
             }
         }
 
-        // Update progress
-        progressLabel.setText("Attempt: " + (session.getCurrentQuestionIndex()+1) + "/" + session.getTotalQuestions());
+        progressLabel.setText("Question: " + (session.getCurrentQuestionIndex()+1) + "/" + session.getTotalQuestions());
     }
 
     private void checkAnswer() {
@@ -264,7 +268,6 @@ public class GameScreen extends BorderPane {
 
         boolean correct = session.answerCurrentQuestion(selectedIndex);
 
-        // Show feedback
         Alert feedback = new Alert(Alert.AlertType.INFORMATION);
         feedback.setTitle(correct ? "Correct!" : "Incorrect");
         feedback.setHeaderText(correct ? "Ho lokile!" : "Ha ho lokile");
@@ -272,7 +275,6 @@ public class GameScreen extends BorderPane {
                 "Try again next time!");
         feedback.showAndWait();
 
-        // Update score
         scoreLabel.setText("Score: " + session.getScore());
 
         if (session.hasMoreQuestions()) {
@@ -285,30 +287,100 @@ public class GameScreen extends BorderPane {
     }
 
     private void endGameSession() {
-        Alert result = new Alert(Alert.AlertType.INFORMATION);
-        result.setTitle("Game Over");
-
-        if (session.isLevelPassed()) {
-            result.setHeaderText("Level Passed!");
-            result.setContentText("Congratulations! Your score: " + session.getScore());
-
-            if (!session.getPlayerName().equals("QuickPlay")) {
-                CareerData career = CareerData.load(session.getPlayerName());
-                if (career != null) {
-                    career.updateStats(
-                            session.getCategory(),
-                            session.getLevel(),
-                            session.getScore()
-                    );
-                    career.save();
-                }
-            }
-        } else {
-            result.setHeaderText("Level Failed");
-            result.setContentText("Try again! Your score: " + session.getScore());
+        // Always update career data if not QuickPlay
+        if (!session.getPlayerName().equals("QuickPlay")) {
+            updateCareerData();
         }
 
-        result.showAndWait();
-        mainApp.showMainMenu();
+        try {
+            // Load appropriate image
+            String imagePath = session.isLevelPassed() ?
+                    "/org/example/sesotho_game/images/happy popae.png" :
+                    "/org/example/sesotho_game/images/angry popae.png";
+            Image resultImage = new Image(getClass().getResourceAsStream(imagePath));
+            ImageView imageView = new ImageView(resultImage);
+            imageView.setFitWidth(200);
+            imageView.setPreserveRatio(true);
+
+            // Create dialog with just "Okay" button
+            Alert resultDialog = new Alert(Alert.AlertType.INFORMATION);
+            resultDialog.setTitle("Game Over");
+            resultDialog.getButtonTypes().setAll(ButtonType.OK);
+
+            // Set content
+            String resultText = session.isLevelPassed() ?
+                    "Level Passed! \nNext level your career in this category is unlocked \nYour score: " + session.getScore() :
+                    "Level Failed\nYour score: " + session.getScore();
+
+            VBox content = new VBox(20, imageView, new Label(resultText));
+            content.setAlignment(Pos.CENTER);
+            content.setPadding(new Insets(20));
+            resultDialog.getDialogPane().setContent(content);
+
+            // Return to main menu when dialog closes
+            resultDialog.setOnHidden(e -> mainApp.showMainMenu());
+            resultDialog.showAndWait();
+        } catch (Exception e) {
+            // Fallback if image loading fails
+            Alert result = new Alert(Alert.AlertType.INFORMATION);
+            result.setTitle("Game Over");
+            result.setContentText("Your score: " + session.getScore());
+            result.showAndWait();
+            mainApp.showMainMenu();
+        }
+    }
+    private void updateCareerData() {
+        try {
+            CareerData career = CareerData.load(session.getPlayerName());
+            if (career == null) {
+                career = new CareerData(session.getPlayerName());
+            }
+
+            career.updateStats(
+                    session.getCategory(),
+                    session.getLevel(),
+                    session.getScore()
+            );
+
+            if (!career.save()) {
+                System.err.println("Failed to save career data");
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating career data: " + e.getMessage());
+        }
+    }
+
+    private void showGameOverDialog() {
+        Alert resultDialog = new Alert(Alert.AlertType.INFORMATION);
+        resultDialog.setTitle("Game Over");
+
+        String resultText = session.isLevelPassed() ?
+                "Level Passed!\nYour score: " + session.getScore() :
+                "Level Failed\nYour score: " + session.getScore();
+
+        resultDialog.setHeaderText(resultText);
+
+        // Add only OK button
+        resultDialog.getButtonTypes().setAll(ButtonType.OK);
+
+        // Return to main menu after dialog closes
+        resultDialog.setOnHidden(e -> mainApp.showMainMenu());
+        resultDialog.showAndWait();
+    }
+
+    private void confirmQuit() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Quit Game");
+        alert.setHeaderText("Are you sure you want to quit?");
+        alert.setContentText("Your progress will not be saved if you quit now.");
+
+        ButtonType quitButton = new ButtonType("Quit", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(quitButton, cancelButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == quitButton) {
+            mainApp.showMainMenu();
+        }
     }
 }

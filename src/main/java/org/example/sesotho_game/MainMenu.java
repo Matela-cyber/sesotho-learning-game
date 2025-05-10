@@ -165,16 +165,43 @@ public class MainMenu extends BorderPane {
         for (int i = 0; i < levels.length; i++) {
             Button levelBtn = new Button(levels[i]);
             levelBtn.setMinSize(120, 80);
-            levelBtn.setStyle("-fx-font-size: 14px; " +
+
+            // Default style for all buttons
+            String buttonStyle = "-fx-font-size: 14px; " +
                     "-fx-background-color: rgba(46, 125, 50, 0.7); " +
                     "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold;");
-            String level = levels[i].toLowerCase();
+                    "-fx-font-weight: bold;";
 
-            if (mode.equals("QuickPlay")) {
-                levelBtn.setOnAction(e -> startGameSession("QuickPlay", category, level));
+            // Disable medium and hard for quick play
+            if (mode.equals("QuickPlay")) {  // Fixed: Added missing parenthesis
+                if (i > 0) { // Medium and Hard buttons
+                    buttonStyle = "-fx-font-size: 14px; " +
+                            "-fx-background-color: rgba(150, 150, 150, 0.7); " +
+                            "-fx-text-fill: #cccccc; " +
+                            "-fx-font-weight: bold;";
+
+                    // Add tooltip explaining why it's disabled
+                    Tooltip tooltip = new Tooltip("Start a career to play Medium and Hard levels");
+                    levelBtn.setTooltip(tooltip);
+
+                    levelBtn.setOnAction(e -> {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Career Required");
+                        alert.setHeaderText("Medium and Hard Levels");
+                        alert.setContentText("Please start a career to play Medium and Hard levels.\n" +
+                                "These levels track your progress and achievements.");
+                        alert.showAndWait();
+                    });
+                } else { // Easy button
+                    String level = levels[i].toLowerCase();
+                    levelBtn.setOnAction(e -> startGameSession("QuickPlay", category, level));
+                }
+            } else { // Career mode - all buttons enabled
+                String level = levels[i].toLowerCase();
+                levelBtn.setOnAction(e -> startCareerGameSession(CareerData.load(mode), category, level));
             }
 
+            levelBtn.setStyle(buttonStyle);
             levelGrid.add(levelBtn, i, 0);
         }
 
@@ -194,7 +221,6 @@ public class MainMenu extends BorderPane {
         gridPane.getChildren().add(levelGrid);
         setCenter(gridPane);
     }
-
     private void setupCareerGrid() {
         careerGrid.getChildren().clear();
 
@@ -456,7 +482,6 @@ public class MainMenu extends BorderPane {
         for (int i = 0; i < levels.length; i++) {
             String level = levels[i];
             String levelKey = levelKeys[i];
-
             CareerData.CategoryStats stats = career.getCategoryStats().get(category).get(levelKey);
 
             Accordion levelAccordion = new Accordion();
@@ -474,9 +499,18 @@ public class MainMenu extends BorderPane {
                     new Label("Total Points: " + stats.totalPoints)
             );
 
-            // Play button
+            // Play button - only enabled if level is unlocked
             Button playBtn = new Button("Play " + level);
-            playBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+            playBtn.setDisable(!stats.unlocked && i > 0); // Disable if not unlocked (except Easy)
+
+            if (i > 0 && !stats.unlocked) {
+                playBtn.setTooltip(new Tooltip("You must pass the " + levels[i-1] + " level first"));
+            }
+
+            playBtn.setStyle("-fx-background-color: " +
+                    (playBtn.isDisabled() ? "#cccccc" : "#4CAF50") +
+                    "; -fx-text-fill: white;");
+
             playBtn.setOnAction(e -> startCareerGameSession(career, category, levelKey));
             statsContent.getChildren().add(playBtn);
 
@@ -519,33 +553,7 @@ public class MainMenu extends BorderPane {
     }
 
 
-//    private void setupSettingsGrid() {
-//        GridPane settingsGrid = new GridPane();
-//        settingsGrid.setAlignment(Pos.CENTER);
-//        settingsGrid.setHgap(15);
-//        settingsGrid.setVgap(15);
-//
-//        String[] settings = {"Sound", "Language", "Difficulty",
-//                "Profile", "Help", "About",
-//                "Reset", "Save", "Exit"};
-//        for (int i = 0; i < settings.length; i++) {
-//            Button btn = new Button(settings[i]);
-//            btn.setMinSize(120, 80);
-//            btn.setStyle("-fx-font-size: 14px; " +
-//                    "-fx-background-color: rgba(70, 130, 180, 0.7); " +
-//                    "-fx-text-fill: white; " +
-//                    "-fx-font-weight: bold;");
-//            final String setting = settings[i];
-//            btn.setOnAction(e -> handleSetting(setting));
-//            settingsGrid.add(btn, i%3, i/3);
-//        }
-//
-//        StackPane gridPane = new StackPane();
-//        gridPane.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); " +
-//                "-fx-background-radius: 15;");
-//        gridPane.getChildren().add(settingsGrid);
-//        setCenter(gridPane);
-//    }
+
 
     private void handleSetting(String setting) {
         switch (setting.toLowerCase()) {
