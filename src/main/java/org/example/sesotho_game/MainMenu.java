@@ -96,7 +96,7 @@ public class MainMenu extends BorderPane {
                 "-fx-border-width: 0;");
         infoText.setText("Lumela! Rea u amohela!\n\n" +
                 "This game will teach you about Sesotho culture.\n" +
-                "Select a game mode from the left to begin learning.");
+                "Select a play career from the left to begin learning for best experience \nor\nquick play for over view .");
     }
 
     private void showContent(String type) {

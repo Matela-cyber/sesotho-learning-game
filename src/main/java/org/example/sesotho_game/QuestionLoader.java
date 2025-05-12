@@ -230,7 +230,7 @@ public class QuestionLoader {
             }
         } else if (category.equalsIgnoreCase("Puo")) {
             if (level.equalsIgnoreCase("easy")) {
-                questions.add(new Question("Fana ka lereho la sehlopha sa boraro: mosali",
+                questions.add(new Question("Fana ka lereho la sehlopha sa boraro",
                         new String[]{"Lesali", "Mosali", "Besali", "Lisali", "Nosali"},
                         1, category, level));
                 questions.add(new Question("Fana ka lereho la sehlopha sa pele",
