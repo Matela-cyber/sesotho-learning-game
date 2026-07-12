@@ -225,16 +225,6 @@ This project is unlicensed. For licensing inquiries or commercial use permission
 
 ---
 
-## 👨‍💻 About the Developer
-
-**Matela-cyber** – Full-stack software developer passionate about education technology and African language preservation.
-
-- 🔗 **GitHub:** [Matela-cyber](https://github.com/Matela-cyber)
-- 💼 **Portfolio:** Check out my repositories for more projects
-- 🎯 **Focus Areas:** Java Development, Educational Software, Language Learning
-
----
-
 ## 🌍 Why This Project Matters
 
 This project demonstrates commitment to:
