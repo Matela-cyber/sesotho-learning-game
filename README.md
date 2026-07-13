@@ -219,16 +219,6 @@ This project welcomes contributions! Here's how to get involved:
 
 ---
 
-## 📝 License & Legal
+## 📝 License
 
-This project is unlicensed. For licensing inquiries or commercial use permissions, please contact the repository owner.
-
----
-
-## 🌍 Why This Project Matters
-
-This project demonstrates commitment to:
-- 📚 **Educational Excellence** – Quality language learning tools
-- 🌏 **Cultural Preservation** – Promoting Sesotho language and culture
-- 💻 **Technical Excellence** – Professional-grade software development
-- 🤝 **Community Building** – Open-source collaboration
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
