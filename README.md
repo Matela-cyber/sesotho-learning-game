@@ -35,7 +35,7 @@ The Sesotho Learning Game is a comprehensive language learning platform built wi
 |-----------|------------|
 | **Java** | Primary language (98.7% codebase) - Advanced |
 | **CSS** | UI Styling (1.3%) - Intermediate |
-| **Swing/JavaFX** | Desktop GUI Framework |
+| **JavaFX** | Desktop GUI Framework |
 | **Database** | Data persistence layer |
 | **Design Patterns** | MVC, Observer, Strategy, Factory |
 
